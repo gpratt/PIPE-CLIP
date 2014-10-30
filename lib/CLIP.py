@@ -362,7 +362,7 @@ class CLIP:
                             self.filteredAlignment += 1
                             flag, mlen, mis = Utils.readQuaFilter(keep, matchLen, mismatch)
                             self.updateCLIPinfo(keep, mlen, mis)
-                            self.outBAM.write(keep)
+                            outBAM.write(keep)
                             if keep.is_reverse:
                                 outBAM_neg.write(keep)
                             else:
@@ -372,7 +372,7 @@ class CLIP:
                     #logging.debug("Good read, update clip info %s" % read.qname)
                     self.filteredAlignment += 1
                     self.updateCLIPinfo(alignment, mlen, mis)
-                    self.outBAM.write(alignment)
+                    outBAM.write(alignment)
                     if alignment.is_reverse:
                         outBAM_neg.write(alignment)
                     else:
@@ -384,7 +384,7 @@ class CLIP:
             self.filteredAlignment += 1
             flag, mlen, mis = Utils.readQuaFilter(keep, matchLen, mismatch)
             self.updateCLIPinfo(keep, mlen, mis)
-            self.outBAM.write(alignment)
+            outBAM.write(alignment)
             if keep.is_reverse:
                 outBAM_neg.write(keep)
             else:
