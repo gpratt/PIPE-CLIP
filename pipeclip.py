@@ -73,7 +73,7 @@ def runPipeClip(infile,outputPrefix,matchLength,mismatch,rmdup,fdrEnrichedCluste
 					sys.exit(2)
 				elif myClip.sigMutationCount <=0:
 					logging.warning("There is no reliable mutations found. PIPE-CLIP will provide enriched clusters as crosslinking candidates.")
-					outfilelist = myClip.printEnrichClusters()
+					outfilelist = myClip.printEnrichedClusters()
 			#annotation if possible
 		if species in ["mm10","mm9","hg19"]:
 			logging.info("Started to annotate cross-linking sits using HOMER")
