@@ -25,6 +25,7 @@ import subprocess
 import OptValidator
 import datetime
 import Utils
+import os
 
 OptValidator.opt_validate()
 
@@ -207,7 +208,8 @@ def clusterEnrich(clip,threshold=0.01):
 	for index in range(len(epsilon)):
 		e = epsilon[index]
 		s = step[index]
-		r_args = ['Rscript','lib/ZTNB_tryCatch.R',temp_filename,str(threshold),str(e),str(s)]
+		r_args = ['Rscript',os.path.join(os.path.dirname(Utils.__file__), 'ZTNB_tryCatch.R'),
+                  temp_filename,str(threshold),str(e),str(s)]
 		p = subprocess.Popen(r_args)
 		stdout_value = p.communicate()[0]
 		#output = subprocess.check_output['ls','-l','test.merge.ztnb']
