@@ -305,94 +305,96 @@ class CLIP:
 			self.crosslinking[k].fishertest()
 
 
-	def filter(self,matchLen,mismatch,cliptype,duprm):
-		'''Filter the input BAM file according to parameters. Make clusters and mutations at the same time'''
-		logging.info("Start to filter alignment using parameters:")
-		logging.info("match length:%d" % (matchLen))
-		logging.info("mismatch count: %d" % (mismatch))
-		logging.info("CLIP type:%s" % (str(cliptype)))
-		logging.info("Rmdup code:%s" % (str(duprm)))
-		logging.info("There are %d reads in origianl input file" % (self.originalBAM.mapped))
-		#outBAM = pysam.Samfile(outprefix+".filtered.bam","wb",template=self.originalBAM)
-		self.originalMapped = self.originalBAM.mapped
-		outBAM_pos = pysam.Samfile(self.outprefix+".pos.filtered.bam","wb",template=self.originalBAM)
-		outBAM_neg = pysam.Samfile(self.outprefix+".neg.filtered.bam","wb",template=self.originalBAM)
-		self.type = cliptype
-		if cliptype == 3:#make sure there is no rmdup for iCLIP data
-			duprm = 0
-		count = 0
-		start_time = datetime.datetime.now()
-		for alignment in self.originalBAM:
-			#print "Now processing",alignment.qname
-			if not alignment.cigar : #reads is unmapped
-				continue
-			count += 1
-			if count % 500000 ==0:
-				stop_time = datetime.datetime.now()
-				logging.debug("Processed %d reads in %s" % (count,str(stop_time-start_time)))
-				start_time = stop_time
-			flag,mlen,mis = Utils.readQuaFilter(alignment,matchLen,mismatch)
-			if flag:
-				#print "Qualified read"
-				#print	alignment
-				#print "current Gourp key",self.currentGroupKey
-				if duprm > 0:
-					#get group key
-					if duprm == 1:
-						groupkey = Utils.rmdupKey_Start(alignment)
-					elif duprm == 2:
-						groupkey = Utils.rmdupKey_Seq(alignment)
-					#check current group
-					if groupkey == self.currentGroupKey:#overlap with current group, update group
-						self.updateCurrentGroup(alignment,mlen,mis)
-					else:#get read from current group and discard it, use current read to start a new current group
-						if self.currentGroupKey!="None":#current group exists
-							keep = self.rmdup()
-							#logging.debug("Pop out read to keep %s" % keep)
-							self.currentGroup = []
-							self.filteredAlignment += 1
-							flag,mlen,mis = Utils.readQuaFilter(keep,matchLen,mismatch)
-							self.updateCLIPinfo(keep,mlen,mis)
-							#outBAM.write(keep)
-							if keep.is_reverse:
-								outBAM_neg.write(keep)
-							else:
-								outBAM_pos.write(keep)
-						self.iniDupGroupInfo(alignment,groupkey,mlen,mis)#make new group using current alignment
-				else:#there is no rmdup
-					#logging.debug("Good read, update clip info %s" % read.qname)
-					self.filteredAlignment+=1
-					self.updateCLIPinfo(alignment,mlen,mis)
-					#outBAM.write(alignment)
-					if alignment.is_reverse:
-						outBAM_neg.write(alignment)
-					else:
-						outBAM_pos.write(alignment)
-		#clean up the final dupGroup, if rmdup==0, there is no final dupGroup
-		if len(self.currentGroup)>0:
-			keep = self.rmdup()
-			self.currentGroup = []
-			self.filteredAlignment+=1
-			flag,mlen,mis = Utils.readQuaFilter(keep,matchLen,mismatch)
-			self.updateCLIPinfo(keep,mlen,mis)
-			#outBAM.write(alignment)
-			if keep.is_reverse:
-				outBAM_neg.write(keep)
-			else:
-				outBAM_pos.write(keep)
-		#Logging CLIP sample information
-		#outBAM.close()
-		outBAM_pos.close()
-		outBAM_neg.close()
-		#pysam.index(outprefix+".filtered.bam")
-		pysam.index(self.outprefix+".pos.filtered.bam")
-		pysam.index(self.outprefix+".neg.filtered.bam")
-		#self.filteredBAM = pysam.Samfile(outprefix+".filtered.bam","rb")# move file pointer to the file head
-		
-		self.posfilteredBAM = pysam.Samfile(self.outprefix+".pos.filtered.bam","rb")# move file pointer to the file head
-		self.negfilteredBAM = pysam.Samfile(self.outprefix+".neg.filtered.bam","rb")# move file pointer to the file head
-		self.originalBAM = None 
-		logging.debug("After filtering, %d reads left" % (self.filteredAlignment))
-		logging.debug("There are %d clusters in total" % (len(self.clusters)))
-		logging.debug("There are %d mutations in total" % (len(self.mutations)))
+    def filter(self, matchLen, mismatch, cliptype, duprm):
+        '''Filter the input BAM file according to parameters. Make clusters and mutations at the same time'''
+        logging.info("Start to filter alignment using parameters:")
+        logging.info("match length:%d" % (matchLen))
+        logging.info("mismatch count: %d" % (mismatch))
+        logging.info("CLIP type:%s" % (str(cliptype)))
+        logging.info("Rmdup code:%s" % (str(duprm)))
+        logging.info("There are %d reads in origianl input file" % (self.originalBAM.mapped))
+        outBAM = pysam.Samfile(self.outprefix + ".filtered.bam", "wb", template=self.originalBAM)
+        self.originalMapped = self.originalBAM.mapped
+        outBAM_pos = pysam.Samfile(self.outprefix + ".pos.filtered.bam", "wb", template=self.originalBAM)
+        outBAM_neg = pysam.Samfile(self.outprefix + ".neg.filtered.bam", "wb", template=self.originalBAM)
+        self.type = cliptype
+        if cliptype == 3:  # make sure there is no rmdup for iCLIP data
+            duprm = 0
+        count = 0
+        start_time = datetime.datetime.now()
+        for alignment in self.originalBAM:
+            # print "Now processing",alignment.qname
+            if not alignment.cigar:  #reads is unmapped
+                continue
+            count += 1
+            if count % 500000 == 0:
+                stop_time = datetime.datetime.now()
+                logging.debug("Processed %d reads in %s" % (count, str(stop_time - start_time)))
+                start_time = stop_time
+            flag, mlen, mis = Utils.readQuaFilter(alignment, matchLen, mismatch)
+            if flag:
+                #print "Qualified read"
+                #print	alignment
+                #print "current Gourp key",self.currentGroupKey
+                if duprm > 0:
+                    #get group key
+                    if duprm == 1:
+                        groupkey = Utils.rmdupKey_Start(alignment)
+                    elif duprm == 2:
+                        groupkey = Utils.rmdupKey_Seq(alignment)
+                    #check current group
+                    if groupkey == self.currentGroupKey:  #overlap with current group, update group
+                        self.updateCurrentGroup(alignment, mlen, mis)
+                    else:  #get read from current group and discard it, use current read to start a new current group
+                        if self.currentGroupKey != "None":  #current group exists
+                            keep = self.rmdup()
+                            #logging.debug("Pop out read to keep %s" % keep)
+                            self.currentGroup = []
+                            self.filteredAlignment += 1
+                            flag, mlen, mis = Utils.readQuaFilter(keep, matchLen, mismatch)
+                            self.updateCLIPinfo(keep, mlen, mis)
+                            self.outBAM.write(keep)
+                            if keep.is_reverse:
+                                outBAM_neg.write(keep)
+                            else:
+                                outBAM_pos.write(keep)
+                        self.iniDupGroupInfo(alignment, groupkey, mlen, mis)  #make new group using current alignment
+                else:  #there is no rmdup
+                    #logging.debug("Good read, update clip info %s" % read.qname)
+                    self.filteredAlignment += 1
+                    self.updateCLIPinfo(alignment, mlen, mis)
+                    self.outBAM.write(alignment)
+                    if alignment.is_reverse:
+                        outBAM_neg.write(alignment)
+                    else:
+                        outBAM_pos.write(alignment)
+                        # clean up the final dupGroup, if rmdup==0, there is no final dupGroup
+        if len(self.currentGroup) > 0:
+            keep = self.rmdup()
+            self.currentGroup = []
+            self.filteredAlignment += 1
+            flag, mlen, mis = Utils.readQuaFilter(keep, matchLen, mismatch)
+            self.updateCLIPinfo(keep, mlen, mis)
+            self.outBAM.write(alignment)
+            if keep.is_reverse:
+                outBAM_neg.write(keep)
+            else:
+                outBAM_pos.write(keep)
+        #Logging CLIP sample information
+        outBAM.close()
+        outBAM_pos.close()
+        outBAM_neg.close()
+        pysam.index(self.outprefix+".filtered.bam")
+        pysam.index(self.outprefix + ".pos.filtered.bam")
+        pysam.index(self.outprefix + ".neg.filtered.bam")
+        self.filteredBAM = pysam.Samfile(self.outprefix+".filtered.bam","rb")# move file pointer to the file head
+
+        self.posfilteredBAM = pysam.Samfile(self.outprefix + ".pos.filtered.bam",
+                                            "rb")  # move file pointer to the file head
+        self.negfilteredBAM = pysam.Samfile(self.outprefix + ".neg.filtered.bam",
+                                            "rb")  # move file pointer to the file head
+        self.originalBAM = None
+        logging.debug("After filtering, %d reads left" % (self.filteredAlignment))
+        logging.debug("There are %d clusters in total" % (len(self.clusters)))
+        logging.debug("There are %d mutations in total" % (len(self.mutations)))
 
